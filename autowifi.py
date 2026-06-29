@@ -20,26 +20,27 @@ def reconnect_wifi():
     
     options = webdriver.ChromeOptions()
     
-    # TỰ ĐỘNG TÌM ĐƯỜNG DẪN TRÌNH DUYỆT BẤT CHẤP TERMUX ĐỔI TÊN
+    # 1. Định vị trình duyệt (Dùng shutil như đã fix ở bản trước)
     chromium_path = shutil.which("chromium-browser") or shutil.which("chromium")
-    if not chromium_path:
-        print("-> [LỖI FATAL] Không tìm thấy trình duyệt Chromium trong Termux. Bạn đã chạy 'pkg install chromium' chưa?")
-        return
     options.binary_location = chromium_path
     
     options.add_argument('--headless=new')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--log-level=3')
-    options.add_argument('--window-size=1920,1080')
     
-    # Hai dòng bắt buộc để không bị crash RAM khi chạy Selenium trên điện thoại Android
+    # ==============================================================
+    # VŨ KHÍ TỐI THƯỢNG CHỐNG LẠI ANDROID PHANTOM PROCESS KILLER
+    # ==============================================================
+    options.add_argument('--single-process') # Ép chạy 1 tiến trình duy nhất (Cứu tinh của Termux)
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--disable-software-rasterizer') # Tắt bộ giả lập đồ họa 
+    options.add_argument('--disable-features=VizDisplayCompositor') # Tắt bộ dựng hình
+    # ==============================================================
     
-    # TẮT TOÀN BỘ BẢO MẬT PNA & CORS CỦA CHROME 
+    # Tắt bảo mật chặn mạng PNA
     options.add_argument('--disable-web-security') 
     options.add_argument('--allow-running-insecure-content')
-    options.add_argument('--disable-features=IsolateOrigins,site-per-process,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults')
+    options.add_argument('--disable-features=IsolateOrigins,site-per-process,BlockInsecurePrivateNetworkRequests')
     
     # Xóa dấu vết Bot
     options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
@@ -47,12 +48,10 @@ def reconnect_wifi():
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
     
-    # TỰ ĐỘNG TÌM ĐƯỜNG DẪN CHROMEDRIVER
     chromedriver_path = shutil.which("chromedriver")
-    if not chromedriver_path:
-        print("-> [LỖI FATAL] Không tìm thấy ChromeDriver!")
-        return
-    service = Service(chromedriver_path)
+    
+    # FIX LỖI TIMEOUT DO LOCALHOST CỦA TERMUX
+    service = Service(chromedriver_path, service_args=["--port=0", "--host=127.0.0.1"])
     
     driver = webdriver.Chrome(service=service, options=options)
     try:
