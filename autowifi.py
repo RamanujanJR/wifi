@@ -3,6 +3,7 @@ import datetime
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 
 TEST_URL = "https://clients3.google.com/generate_204"
 ROUTER_URL = "http://192.168.200.1/login"
@@ -17,12 +18,20 @@ def reconnect_wifi():
     print(f"\n[{datetime.datetime.now().strftime('%H:%M:%S')}] Rớt mạng! Đang kết nối lại ngầm...")
     
     options = webdriver.ChromeOptions()
+    
+    # Ép Selenium sử dụng trình duyệt Chromium được build riêng của Termux
+    options.binary_location = "/data/data/com.termux/files/usr/bin/chromium"
+    
     options.add_argument('--headless=new')
     options.add_argument('--disable-gpu')
     options.add_argument('--log-level=3')
     options.add_argument('--window-size=1920,1080')
     
-    # TẮT TOÀN BỘ BẢO MẬT PNA & CORS CỦA CHROME (NGUYÊN NHÂN GÂY LỖI)
+    # Hai dòng bắt buộc để không bị crash RAM khi chạy Selenium trên điện thoại Android
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    
+    # TẮT TOÀN BỘ BẢO MẬT PNA & CORS CỦA CHROME (NGUYÊN NHÂN GÂY LỖI TRÊN DIỆN THOẠI)
     options.add_argument('--disable-web-security') 
     options.add_argument('--allow-running-insecure-content')
     options.add_argument('--disable-features=IsolateOrigins,site-per-process,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults')
@@ -33,7 +42,10 @@ def reconnect_wifi():
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
     
-    driver = webdriver.Chrome(options=options)
+    # Chỉ định đường dẫn tới Driver ChromeDriver có sẵn trong Termux
+    service = Service("/data/data/com.termux/files/usr/bin/chromedriver")
+    
+    driver = webdriver.Chrome(service=service, options=options)
     try:
         # Tiêm mã xóa cờ Webdriver
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
@@ -81,6 +93,11 @@ def reconnect_wifi():
         driver.quit()
 
 if __name__ == "__main__":
+    print("=========================================")
+    print("  AWING AUTO-CONNECT FOR TERMUX (ANDROID)")
+    print("=========================================")
+    print("Mã nguồn đã tối ưu hóa cho Mobile. Đang giám sát mạng...")
+    
     if check_internet():
         print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Đang có mạng. Tool sẽ trực chờ...")
         
