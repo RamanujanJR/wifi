@@ -20,9 +20,10 @@ def reconnect_wifi():
     
     options = webdriver.ChromeOptions()
     
-    # 1. Định vị trình duyệt (Dùng shutil như đã fix ở bản trước)
+    # Định vị trình duyệt tự động
     chromium_path = shutil.which("chromium-browser") or shutil.which("chromium")
-    options.binary_location = chromium_path
+    if chromium_path:
+        options.binary_location = chromium_path
     
     options.add_argument('--headless=new')
     
@@ -34,7 +35,6 @@ def reconnect_wifi():
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-gpu')
     options.add_argument('--disable-software-rasterizer') # Tắt bộ giả lập đồ họa 
-    options.add_argument('--disable-features=VizDisplayCompositor') # Tắt bộ dựng hình
     # ==============================================================
     
     # Tắt bảo mật chặn mạng PNA
@@ -50,12 +50,11 @@ def reconnect_wifi():
     
     chromedriver_path = shutil.which("chromedriver")
     
-    # FIX LỖI TIMEOUT DO LOCALHOST CỦA TERMUX
-    service = Service(chromedriver_path, service_args=["--port=0", "--host=127.0.0.1"])
+    # FIX: Đã xóa cái service_args bị sai cú pháp gây crash Chromedriver
+    service = Service(chromedriver_path)
     
     driver = webdriver.Chrome(service=service, options=options)
     try:
-        # Tiêm mã xóa cờ Webdriver
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
         })
@@ -63,7 +62,6 @@ def reconnect_wifi():
         driver.get(ROUTER_URL)
         print("-> Đang chờ trang tải và đếm ngược quảng cáo (Sẽ mất khoảng 5-10s)...")
         
-        # Vòng lặp soi nút (Giống Tampermonkey)
         clicked = False
         for _ in range(30):
             time.sleep(1)
@@ -71,7 +69,6 @@ def reconnect_wifi():
                 btn = driver.find_element(By.ID, "connectToInternet")
                 btn_class = btn.get_attribute("class")
                 if btn_class and "disabled" not in btn_class:
-                    # Bấm nút và kích hoạt hàm JS song song để đảm bảo ăn 100%
                     driver.execute_script("""
                         arguments[0].click();
                         try { slideBannerFunctions.connectToWifi(); } catch(e) {}
@@ -86,7 +83,6 @@ def reconnect_wifi():
             print("-> [Lỗi] Quá 30s không tìm thấy nút kết nối.")
             return
 
-        # Kiên nhẫn đợi mạng thông (Vì PNA đã tắt, lệnh gửi đi sẽ thông suốt)
         for _ in range(15):
             time.sleep(1)
             if check_internet():
