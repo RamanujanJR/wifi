@@ -63,7 +63,7 @@ def reconnect_wifi():
         print("-> Đang chờ trang tải và đếm ngược quảng cáo (Sẽ mất khoảng 5-10s)...")
         
         clicked = False
-        for _ in range(30):
+        for _ in range(120):
             time.sleep(1)
             try:
                 btn = driver.find_element(By.ID, "connectToInternet")
@@ -80,7 +80,7 @@ def reconnect_wifi():
                 pass
                 
         if not clicked:
-            print("-> [Lỗi] Quá 30s không tìm thấy nút kết nối.")
+            print("-> [Lỗi] Quá 120s không tìm thấy nút kết nối.")
             return
 
         for _ in range(15):
